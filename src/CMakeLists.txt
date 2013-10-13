@@ -3,7 +3,6 @@ add_library(nano_bmp SHARED nano_bmp.c)
 
 IF (${WIN32})
 	install(TARGETS nano_bmp DESTINATION "${Nano_BMP_SOURCE_DIR}/bin")
-	message(STATUS "windows")
 ELSE(${WIN32})
 	install(FILES "${Nano_BMP_SOURCE_DIR}/include/nano_bmp.h" DESTINATION include)
 	install(TARGETS nano_bmp
@@ -11,6 +10,5 @@ ELSE(${WIN32})
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib
 	)
-	message(STATUS "not windows")
 ENDIF(${WIN32})
 
