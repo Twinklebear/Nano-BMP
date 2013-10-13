@@ -1,4 +1,4 @@
-Nano-BMP: A minimal BMP loader
+Nano-BMP: A minimal BMP library
 =
 Written because I got curious about loading and working with a basic file format and wanted to go through
 the process of creating and cross-platform distributable library. The last bit isn't quite done, I still need
