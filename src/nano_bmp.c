@@ -187,4 +187,55 @@ bmp_t* convert_24bpp(bmp_t *bmp){
 	}
 	return converted;
 }
+/*
+ * Struct to store some information about a value being blended
+ */
+typedef struct blend_val_t {
+	int idx, x, y;
+} blend_val_t;
+/*
+ * Wrapping function used by bilinear_interpolate when wrapping is desired
+ * wraps some float around to keep it in range [0, n]
+ */
+float wrapf(float x, int n){
+	if (x < 0){
+		int offset = n * abs((int)x / n + 1);
+		return x + offset;
+	}
+	else if (x >= n){
+		int offset = n * ((int)x / n);
+		return x - offset;
+	}
+	return x;
+}
+int wrapi(int x, int n){
+	if (x < 0){
+		int offset = n * abs(x / n + 1);
+		return x + offset;
+	}
+	else if (x >= n){
+		int offset = n * (x / n);
+		return x - offset;
+	}
+	return x;
+}
+
+void bilinear_interpolate(const bmp_t *bmp, float x, float y,
+	uint8_t *r, uint8_t *g, uint8_t *b)
+{
+	int w = bmp->info.w, h = bmp->info.h;
+	if (x < -1 || x > w){
+		x = wrapf(x, w);
+	}
+	if (y < -1 || y > h){
+		y = wrapf(y, h);
+	}
+	blend_val_t vals[4];
+	for (int i = 0; i < 4; ++i){
+		vals[i].x = wrapi(x + i % 2, w);
+		vals[i].y = wrapi(y + i / 2, h);
+		vals[i].idx = pixel_idx(bmp, vals[i].x, vals[i].y);
+		printf("bval %d, pos: (%d, %d), idx: %d\n", i, vals[i].x, vals[i].y, vals[i].idx);
+	}		
+}
 

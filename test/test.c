@@ -15,6 +15,12 @@ int main(int argc, char **argv){
 	}
 	write_bmp("rgb_gradient.bmp", bmp);
 	printf("wrote rgb gradient bmp: rgb_gradient.bmp\n");
+
+	uint8_t col[3] = { 0 };
+	bilinear_interpolate(bmp, 0.5f, 3.5f, &col[0], &col[1], &col[2]);
+	printf("Bilinear interpolated color at (0.5f, 0.5f) = (%d, %d, %d)\n",
+		col[0], col[1], col[2]);
+
 	destroy_bmp(bmp);
 
 	if (argc == 3){

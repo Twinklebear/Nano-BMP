@@ -119,6 +119,12 @@ bmp_t* NANO_BMP_API convert_32bpp(bmp_t *bmp);
  * the 24bpp image. Will return NULL if something goes wrong
  */
 bmp_t* NANO_BMP_API convert_24bpp(bmp_t *bmp);
+/*
+ * Get the bilinearly interpolated color value at x,y where x,y are in
+ * normalized image coords [0.f, 1.f] range
+ */
+void NANO_BMP_API bilinear_interpolate(const bmp_t *bmp, float x, float y,
+	uint8_t *r, uint8_t *g, uint8_t *b);
 
 #ifdef __cplusplus
 }
