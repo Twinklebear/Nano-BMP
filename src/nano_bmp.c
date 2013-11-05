@@ -138,20 +138,26 @@ void write_bmp(const char *f_name, const bmp_t *bmp){
 	fclose(f);
 }
 void get_pixel(const bmp_t *bmp, int x, int y, uint8_t *r, uint8_t *g, uint8_t *b){
+	//Cache values to not do unaligned reads so much
+	int bpp = bmp->info.bpp;
+	int h = bmp->info.h;
 	//Determine the number of bytes per row
-	size_t bpr = bmp->info.bpp / 8 * bmp->info.w + bmp->padding;
+	size_t bpr = bpp / 8 * bmp->info.w + bmp->padding;
 	//Invert y since the pixel array will be upside down
-	*r = bmp->pixels[x * bmp->info.bpp / 8 + 2 + (bmp->info.h - 1 - y) * bpr];
-	*g = bmp->pixels[x * bmp->info.bpp / 8 + 1 + (bmp->info.h - 1 - y) * bpr];
-	*b = bmp->pixels[x * bmp->info.bpp / 8 + (bmp->info.h - 1 - y) * bpr];
+	*r = bmp->pixels[x * bpp / 8 + 2 + (h - 1 - y) * bpr];
+	*g = bmp->pixels[x * bpp / 8 + 1 + (h - 1 - y) * bpr];
+	*b = bmp->pixels[x * bpp / 8 + (h - 1 - y) * bpr];
 }
 void set_pixel(bmp_t *bmp, int x, int y, uint8_t r, uint8_t g, uint8_t b){
+	//Cache values to not do unaligned reads so much
+	int bpp = bmp->info.bpp;
+	int h = bmp->info.h;
 	//Determine the number of bytes per row
-	size_t bpr = bmp->info.bpp / 8 * bmp->info.w + bmp->padding;
+	size_t bpr = bpp / 8 * bmp->info.w + bmp->padding;
 	//Invert y since the pixel array will be upside down
-	bmp->pixels[x * bmp->info.bpp / 8 + 2 + (bmp->info.h - 1 - y) * bpr] = r;
-	bmp->pixels[x * bmp->info.bpp / 8 + 1 + (bmp->info.h - 1 - y) * bpr] = g;
-	bmp->pixels[x * bmp->info.bpp / 8 + (bmp->info.h - 1 - y) * bpr] = b;
+	bmp->pixels[x * bpp / 8 + 2 + (h - 1 - y) * bpr] = r;
+	bmp->pixels[x * bpp / 8 + 1 + (h - 1 - y) * bpr] = g;
+	bmp->pixels[x * bpp / 8 + (h - 1 - y) * bpr] = b;
 }
 bmp_t* convert_32bpp(bmp_t *bmp){
 	bmp_t *converted = create_bmp(bmp->info.w, bmp->info.h, 32);
@@ -159,8 +165,9 @@ bmp_t* convert_32bpp(bmp_t *bmp){
 		fprintf(stderr, "convert_32bpp error: Failed to allocated room for conversion\n");
 		return NULL;
 	}
-	for (int i = 0; i < bmp->info.h; ++i){
-		for (int j = 0; j < bmp->info.w; ++j){
+	int w = bmp->info.w, h = bmp->info.h;
+	for (int i = 0; i < h; ++i){
+		for (int j = 0; j < w; ++j){
 			uint8_t color[3];
 			get_pixel(bmp, j, i, &color[0], &color[1], &color[2]);
 			set_pixel(converted, j, i, color[0], color[1], color[2]);
@@ -174,8 +181,9 @@ bmp_t* convert_24bpp(bmp_t *bmp){
 		fprintf(stderr, "convert_24bpp error: Failed to allocate room for conversion\n");
 		return NULL;
 	}
-	for (int i = 0; i < bmp->info.h; ++i){
-		for (int j = 0; j < bmp->info.w; ++j){
+	int w = bmp->info.w, h = bmp->info.h;
+	for (int i = 0; i < h; ++i){
+		for (int j = 0; j < w; ++j){
 			uint8_t color[3];
 			get_pixel(bmp, j, i, &color[0], &color[1], &color[2]);
 			set_pixel(converted, j, i, color[0], color[1], color[2]);
