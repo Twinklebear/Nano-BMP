@@ -97,6 +97,11 @@ bmp_t* NANO_BMP_API load_bmp(const char *f_name);
  */
 void NANO_BMP_API write_bmp(const char *f_name, const bmp_t *bmp);
 /*
+ * Get the index of the start of some pixels BGR(X) values, returns index
+ * of the B element
+ */
+int NANO_BMP_API pixel_idx(const bmp_t *bmp, int x, int y);
+/*
  * Get the RGB color of a pixel
  */
 void NANO_BMP_API get_pixel(const bmp_t *bmp, int x, int y, uint8_t *r, uint8_t *g, uint8_t *b);
