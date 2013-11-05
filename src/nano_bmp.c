@@ -224,18 +224,65 @@ void bilinear_interpolate(const bmp_t *bmp, float x, float y,
 	uint8_t *r, uint8_t *g, uint8_t *b)
 {
 	int w = bmp->info.w, h = bmp->info.h;
+	x = x * w - 0.5f;
+	y = y * h - 0.5f;
 	if (x < -1 || x > w){
 		x = wrapf(x, w);
 	}
 	if (y < -1 || y > h){
 		y = wrapf(y, h);
 	}
+	//Apply offset to treat pixels as being centered in their location
+
+	printf("pixel loc: (%f, %f)\n", x, y);
+
+	//Need to pick the nearest 4 pixels not just the positive dir 2x2 block
 	blend_val_t vals[4];
 	for (int i = 0; i < 4; ++i){
 		vals[i].x = wrapi(x + i % 2, w);
 		vals[i].y = wrapi(y + i / 2, h);
 		vals[i].idx = pixel_idx(bmp, vals[i].x, vals[i].y);
 		printf("bval %d, pos: (%d, %d), idx: %d\n", i, vals[i].x, vals[i].y, vals[i].idx);
-	}		
+	}
+	//Translate x,y pos into the unit square we're going to blend in
+	float x_range[2], y_range[2];
+	if (x < 0){
+		x_range[0] = -1.f;
+		x_range[1] = 0.f;
+	}
+	else if (x >= w){
+		x_range[0] = w - 1;
+		x_range[1] = w;
+	}
+	else {
+		x_range[0] = vals[0].x;
+		x_range[1] = vals[1].x;
+	}
+	if (y < 0){
+		y_range[0] = -1.f;
+		y_range[1] = 0.f;
+	}
+	else if (y >= h){
+		y_range[0] = h - 1;
+		y_range[1] = h;
+	}
+	else {
+		y_range[0] = vals[0].y;
+		y_range[1] = vals[2].y;
+	}
+	//Scale x,y into the unit square
+	x = (x - x_range[0]) / (x_range[1] - x_range[0]);
+	y = (y - y_range[0]) / (y_range[1] - y_range[0]);
+	printf("Blend pos: (%f, %f)\n", x, y);
+
+	//Blend the RGB values
+	*r = bmp->pixels[vals[0].idx + 2] * (1 - x) * (1 - y) + bmp->pixels[vals[1].idx + 2] * x * (1 - y)
+		+ bmp->pixels[vals[2].idx + 2] * (1 - x) * y + bmp->pixels[vals[3].idx + 2] * x * y;
+
+	*g = bmp->pixels[vals[0].idx + 1] * (1 - x) * (1 - y) + bmp->pixels[vals[1].idx + 1] * x * (1 - y)
+		+ bmp->pixels[vals[2].idx + 1] * (1 - x) * y + bmp->pixels[vals[3].idx + 1] * x * y;
+	
+	*b = bmp->pixels[vals[0].idx] * (1 - x) * (1 - y) + bmp->pixels[vals[1].idx] * x * (1 - y)
+		+ bmp->pixels[vals[2].idx] * (1 - x) * y + bmp->pixels[vals[3].idx] * x * y;
 }
 
