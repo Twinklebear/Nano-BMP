@@ -12,13 +12,17 @@ int main(int argc, char **argv){
 		set_pixel(bmp, 2, i, 0, 0, 255);
 		set_pixel(bmp, 3, i, 255, 255, 255);
 	}
-	uint8_t col[3] = { 0 };
-	bilinear_interpolate(bmp, 0, 0, &col[0], &col[1], &col[2]);
-	printf("Bilinear interpolated color at (0.5f, 0.5f) = (%d, %d, %d)\n",
-		col[0], col[1], col[2]);
 
-	write_bmp("rgb_gradient.bmp", bmp);
-	printf("wrote rgb gradient bmp: rgb.bmp\n");
+	//Now make a bilinear filtered copy of the gradient
+	bmp_t *filtered = create_bmp(1, 1, 24);
+	uint8_t col[3] = { 0 };
+	bilinear_filter(bmp, 0, 1, &col[0], &col[1], &col[2]);
+	set_pixel(filtered, 0, 0, col[0], col[1], col[2]);
+
+	write_bmp("filtered.bmp", filtered);
+	write_bmp("rgb.bmp", bmp);
+
+	destroy_bmp(filtered);
 	destroy_bmp(bmp);
 
 	if (argc == 3){

@@ -2,6 +2,11 @@
 #include <stdio.h>
 #include "nano_bmp.h"
 
+#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
+#define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
+//Clamp x between low and high
+#define CLAMP(X, L, H) (MIN(MAX((X), (L)), (H)))
+
 bmp_t* create_bmp(unsigned w, unsigned h, unsigned bpp){
 	if (bpp != 24 && bpp != 32){
 		fprintf(stderr, "create_bmp error: Unsupported bits-per-pixel\n");
@@ -138,6 +143,9 @@ void write_bmp(const char *f_name, const bmp_t *bmp){
 	fclose(f);
 }
 int pixel_idx(const bmp_t *bmp, int x, int y){
+	//Clamp pixels in range
+	x = CLAMP(x, 0, bmp->info.w - 1);
+	y = CLAMP(y, 0, bmp->info.h - 1);
 	//Determine # of bytes per row
 	size_t bpr = bmp->info.bpp / 8 * bmp->info.w + bmp->padding;
 	//Invert y when returning index b/c bmp stored "upside-down"
@@ -187,102 +195,39 @@ bmp_t* convert_24bpp(bmp_t *bmp){
 	}
 	return converted;
 }
-/*
- * Struct to store some information about a value being blended
- */
-typedef struct blend_val_t {
-	int idx, x, y;
-} blend_val_t;
-/*
- * Wrapping function used by bilinear_interpolate when wrapping is desired
- * wraps some float around to keep it in range [0, n]
- */
-float wrapf(float x, int n){
-	if (x < 0){
-		int offset = n * abs((int)x / n + 1);
-		return x + offset;
-	}
-	else if (x >= n){
-		int offset = n * ((int)x / n);
-		return x - offset;
-	}
-	return x;
-}
-int wrapi(int x, int n){
-	if (x < 0){
-		int offset = n * abs(x / n + 1);
-		return x + offset;
-	}
-	else if (x >= n){
-		int offset = n * (x / n);
-		return x - offset;
-	}
-	return x;
-}
-
-void bilinear_interpolate(const bmp_t *bmp, float x, float y,
+void bilinear_filter(const bmp_t *bmp, float u, float v,
 	uint8_t *r, uint8_t *g, uint8_t *b)
 {
-	int w = bmp->info.w, h = bmp->info.h;
-	x = x * w - 0.5f;
-	y = y * h - 0.5f;
-	if (x < -1 || x > w){
-		x = wrapf(x, w);
-	}
-	if (y < -1 || y > h){
-		y = wrapf(y, h);
-	}
-	//Apply offset to treat pixels as being centered in their location
+	u = u * bmp->info.w - 0.5f;
+	v = v * bmp->info.h - 0.5f;
+	int x = u;
+	int y = v;
+	float u_ratio = u - x;
+	float v_ratio = v - y;
+	float u_opposite = 1 - u_ratio;
+	float v_opposite = 1 - v_ratio;
 
-	printf("pixel loc: (%f, %f)\n", x, y);
-
-	//Need to pick the nearest 4 pixels not just the positive dir 2x2 block
-	blend_val_t vals[4];
 	for (int i = 0; i < 4; ++i){
-		vals[i].x = wrapi(x + i % 2, w);
-		vals[i].y = wrapi(y + i / 2, h);
-		vals[i].idx = pixel_idx(bmp, vals[i].x, vals[i].y);
-		printf("bval %d, pos: (%d, %d), idx: %d\n", i, vals[i].x, vals[i].y, vals[i].idx);
+		printf("x = %d, y = %d, idx = %d\n", x + i % 2, y + i / 2,
+			pixel_idx(bmp, x + i % 2, y + i / 2));
 	}
-	//Translate x,y pos into the unit square we're going to blend in
-	float x_range[2], y_range[2];
-	if (x < 0){
-		x_range[0] = -1.f;
-		x_range[1] = 0.f;
-	}
-	else if (x >= w){
-		x_range[0] = w - 1;
-		x_range[1] = w;
-	}
-	else {
-		x_range[0] = vals[0].x;
-		x_range[1] = vals[1].x;
-	}
-	if (y < 0){
-		y_range[0] = -1.f;
-		y_range[1] = 0.f;
-	}
-	else if (y >= h){
-		y_range[0] = h - 1;
-		y_range[1] = h;
-	}
-	else {
-		y_range[0] = vals[0].y;
-		y_range[1] = vals[2].y;
-	}
-	//Scale x,y into the unit square
-	x = (x - x_range[0]) / (x_range[1] - x_range[0]);
-	y = (y - y_range[0]) / (y_range[1] - y_range[0]);
-	printf("Blend pos: (%f, %f)\n", x, y);
 
 	//Blend the RGB values
-	*r = bmp->pixels[vals[0].idx + 2] * (1 - x) * (1 - y) + bmp->pixels[vals[1].idx + 2] * x * (1 - y)
-		+ bmp->pixels[vals[2].idx + 2] * (1 - x) * y + bmp->pixels[vals[3].idx + 2] * x * y;
+	*r = (bmp->pixels[pixel_idx(bmp, x, y) + 2] * u_opposite
+			+ bmp->pixels[pixel_idx(bmp, x + 1, y) + 2]) * v_opposite
+		+ (bmp->pixels[pixel_idx(bmp, x, y + 1) + 2] * u_opposite
+			+ bmp->pixels[pixel_idx(bmp, x + 1, y + 1) + 2]) * v_ratio;
 
-	*g = bmp->pixels[vals[0].idx + 1] * (1 - x) * (1 - y) + bmp->pixels[vals[1].idx + 1] * x * (1 - y)
-		+ bmp->pixels[vals[2].idx + 1] * (1 - x) * y + bmp->pixels[vals[3].idx + 1] * x * y;
+	*g = (bmp->pixels[pixel_idx(bmp, x, y) + 1] * u_opposite
+			+ bmp->pixels[pixel_idx(bmp, x + 1, y) + 1]) * v_opposite
+		+ (bmp->pixels[pixel_idx(bmp, x, y + 1) + 1] * u_opposite
+			+ bmp->pixels[pixel_idx(bmp, x + 1, y + 1) + 1]) * v_ratio;
 	
-	*b = bmp->pixels[vals[0].idx] * (1 - x) * (1 - y) + bmp->pixels[vals[1].idx] * x * (1 - y)
-		+ bmp->pixels[vals[2].idx] * (1 - x) * y + bmp->pixels[vals[3].idx] * x * y;
+	*b = (bmp->pixels[pixel_idx(bmp, x, y)] * u_opposite
+			+ bmp->pixels[pixel_idx(bmp, x + 1, y)]) * v_opposite
+		+ (bmp->pixels[pixel_idx(bmp, x, y + 1)] * u_opposite
+			+ bmp->pixels[pixel_idx(bmp, x + 1, y + 1)]) * v_ratio;
+
+	printf("Blended color: (%d, %d, %d)\n", *r, *g, *b);
 }
 

@@ -120,10 +120,10 @@ bmp_t* NANO_BMP_API convert_32bpp(bmp_t *bmp);
  */
 bmp_t* NANO_BMP_API convert_24bpp(bmp_t *bmp);
 /*
- * Get the bilinearly interpolated color value at x,y where x,y are in
+ * Get the bilinearly filtered color value at x,y where x,y are in
  * normalized image coords [0.f, 1.f] range
  */
-void NANO_BMP_API bilinear_interpolate(const bmp_t *bmp, float x, float y,
+void NANO_BMP_API bilinear_filter(const bmp_t *bmp, float u, float v,
 	uint8_t *r, uint8_t *g, uint8_t *b);
 
 #ifdef __cplusplus
