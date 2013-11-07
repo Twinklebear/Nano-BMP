@@ -207,27 +207,29 @@ void bilinear_filter(const bmp_t *bmp, float u, float v,
 	float u_opposite = 1 - u_ratio;
 	float v_opposite = 1 - v_ratio;
 
+	int idx[4];
 	for (int i = 0; i < 4; ++i){
-		printf("x = %d, y = %d, idx = %d\n", x + i % 2, y + i / 2,
-			pixel_idx(bmp, x + i % 2, y + i / 2));
+		//If we're at the right or bottom of the texture we want
+		//to use pixels to our left or above so subtract instead
+		int p_x = x + i % 2;
+		int p_y = y + i / 2;
+		if (p_x > bmp->info.w - 1){
+			p_x = x - i % 2;
+		}
+		if (p_y > bmp->info.h - 1){
+			p_y = y - i / 2;
+		}
+		idx[i] = pixel_idx(bmp, p_x, p_y);
 	}
 
 	//Blend the RGB values
-	*r = (bmp->pixels[pixel_idx(bmp, x, y) + 2] * u_opposite
-			+ bmp->pixels[pixel_idx(bmp, x + 1, y) + 2]) * v_opposite
-		+ (bmp->pixels[pixel_idx(bmp, x, y + 1) + 2] * u_opposite
-			+ bmp->pixels[pixel_idx(bmp, x + 1, y + 1) + 2]) * v_ratio;
+	*r = (bmp->pixels[idx[0] + 2] * u_opposite + bmp->pixels[idx[1] + 2] * u_ratio) * v_opposite
+		+ (bmp->pixels[idx[2] + 2] * u_opposite	+ bmp->pixels[idx[3] + 2] * u_ratio) * v_ratio;
 
-	*g = (bmp->pixels[pixel_idx(bmp, x, y) + 1] * u_opposite
-			+ bmp->pixels[pixel_idx(bmp, x + 1, y) + 1]) * v_opposite
-		+ (bmp->pixels[pixel_idx(bmp, x, y + 1) + 1] * u_opposite
-			+ bmp->pixels[pixel_idx(bmp, x + 1, y + 1) + 1]) * v_ratio;
+	*g = (bmp->pixels[idx[0] + 1] * u_opposite + bmp->pixels[idx[1] + 1] * u_ratio) * v_opposite
+		+ (bmp->pixels[idx[2] + 1] * u_opposite	+ bmp->pixels[idx[3] + 1] * u_ratio) * v_ratio;
 	
-	*b = (bmp->pixels[pixel_idx(bmp, x, y)] * u_opposite
-			+ bmp->pixels[pixel_idx(bmp, x + 1, y)]) * v_opposite
-		+ (bmp->pixels[pixel_idx(bmp, x, y + 1)] * u_opposite
-			+ bmp->pixels[pixel_idx(bmp, x + 1, y + 1)]) * v_ratio;
-
-	printf("Blended color: (%d, %d, %d)\n", *r, *g, *b);
+	*b = (bmp->pixels[idx[0]] * u_opposite + bmp->pixels[idx[1]] * u_ratio) * v_opposite
+		+ (bmp->pixels[idx[2]] * u_opposite	+ bmp->pixels[idx[3]] * u_ratio) * v_ratio;
 }
 

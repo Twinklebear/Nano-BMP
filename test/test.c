@@ -4,23 +4,31 @@
 #include "nano_bmp.h"
 
 int main(int argc, char **argv){
-	//Test creation 32bit bmp
-	bmp_t *bmp = create_bmp(4, 4, 24);
-	for (int i = 0; i < 4; ++i){
+	//Make some bmp that's half-red half-blue
+	bmp_t *bmp = create_bmp(2, 2, 24);
+	for (int i = 0; i < 2; ++i){
 		set_pixel(bmp, 0, i, 255, 0, 0);
-		set_pixel(bmp, 1, i, 0, 255, 0);
-		set_pixel(bmp, 2, i, 0, 0, 255);
-		set_pixel(bmp, 3, i, 255, 255, 255);
+		set_pixel(bmp, 1, i, 0, 0, 255);
 	}
+	write_bmp("rb.bmp", bmp);
 
-	//Now make a bilinear filtered copy of the gradient
-	bmp_t *filtered = create_bmp(1, 1, 24);
+	//Create bilinear filtered version but sample at pixel centers
+	//we'd expect this to look the same as the original (?)
+	bmp_t *filtered = create_bmp(2, 2, 24);
+	for (int i = 0; i < 4; ++i){
+		uint8_t col[3] = { 0 };
+		bilinear_filter(bmp, (i % 2) / 2.0 + 0.25, (i / 2) / 2.0 + 0.25, &col[0], &col[1], &col[2]);
+		set_pixel(filtered, i % 2, i / 2, col[0], col[1], col[2]);	
+	}
+	write_bmp("filtered_px_center.bmp", filtered);
+
+	//Now sample the half-red half-blue image at the center of the image
 	uint8_t col[3] = { 0 };
-	bilinear_filter(bmp, 0, 1, &col[0], &col[1], &col[2]);
-	set_pixel(filtered, 0, 0, col[0], col[1], col[2]);
-
-	write_bmp("filtered.bmp", filtered);
-	write_bmp("rgb.bmp", bmp);
+	bilinear_filter(bmp, 0.5, 0.5, &col[0], &col[1], &col[2]);
+	for (int i = 0; i < 4; ++i){
+		set_pixel(filtered, i % 2, i / 2, col[0], col[1], col[2]);	
+	}
+	write_bmp("filtered_img_center.bmp", filtered);
 
 	destroy_bmp(filtered);
 	destroy_bmp(bmp);
