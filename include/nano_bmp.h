@@ -5,23 +5,13 @@
 extern "C" {
 #endif
 
-#ifdef _WIN32
-	#ifdef BUILDING_NANO
-		#define NANO_BMP_API __declspec(dllexport)
-	#else
-		#define NANO_BMP_API __declspec(dllimport)
-	#endif
-#else
-	#define NANO_BMP_API 
-#endif
-
 #include <stdint.h>
 
 /*
  * This is a very small BMP image library with the bare minimum of
  * features needed to read/write basic BMP images.
  * Supports: Uncompressed 24 or 32bit BMP BI_RGB with the BITMAPINFOHEADER and without
- * color palettes or important colors. The information will be read in but is 
+ * color palettes or important colors. The information will be read in but is
  * ignored, and will be set to default (ie. ignored) values when creating new
  * bitmaps and simply left unchanged when copying bmps.
  */
@@ -78,52 +68,52 @@ typedef struct bmp_t {
 } bmp_t;
 /*
  * Create a bpp-bit BMP with some width and height. Only 24 or 32bpp
- * is supported. The pixel values will be unitialized and thus 
- * undefined until they're set via set_pixel. 
+ * is supported. The pixel values will be unitialized and thus
+ * undefined until they're set via set_pixel.
  * Will return NULL if allocation fails
  */
-bmp_t* NANO_BMP_API create_bmp(unsigned w, unsigned h, unsigned bpp);
+bmp_t* create_bmp(unsigned w, unsigned h, unsigned bpp);
 /*
  * Destroy a BMP
  */
-void NANO_BMP_API destroy_bmp(bmp_t *bmp);
+void destroy_bmp(bmp_t *bmp);
 /*
  * Load a BMP from a file. Will return NULL if the BMP is an unsupported type
  * or some other loading error occurs
  */
-bmp_t* NANO_BMP_API load_bmp(const char *f_name);
+bmp_t* load_bmp(const char *f_name);
 /*
  * Write a BMP to a file
  */
-void NANO_BMP_API write_bmp(const char *f_name, const bmp_t *bmp);
+void write_bmp(const char *f_name, const bmp_t *bmp);
 /*
  * Get the index of the start of some pixels BGR(X) values, returns index
  * of the B element
  */
-int NANO_BMP_API pixel_idx(const bmp_t *bmp, int x, int y);
+int pixel_idx(const bmp_t *bmp, int x, int y);
 /*
  * Get the RGB color of a pixel
  */
-void NANO_BMP_API get_pixel(const bmp_t *bmp, int x, int y, uint8_t *r, uint8_t *g, uint8_t *b);
+void get_pixel(const bmp_t *bmp, int x, int y, uint8_t *r, uint8_t *g, uint8_t *b);
 /*
  * Set the color of a pixel
  */
-void NANO_BMP_API set_pixel(bmp_t *bmp, int x, int y, uint8_t r, uint8_t g, uint8_t b);
+void set_pixel(bmp_t *bmp, int x, int y, uint8_t r, uint8_t g, uint8_t b);
 /*
  * Convert a 24bpp BMP to 32bpp. A new BMP will be returned containing
  * the 32bpp image. Will return NULL if something goes wrong
  */
-bmp_t* NANO_BMP_API convert_32bpp(bmp_t *bmp);
+bmp_t* convert_32bpp(bmp_t *bmp);
 /*
  * Convert a 32bpp BMP to 24bpp. A new BMP will be returned containing
  * the 24bpp image. Will return NULL if something goes wrong
  */
-bmp_t* NANO_BMP_API convert_24bpp(bmp_t *bmp);
+bmp_t* convert_24bpp(bmp_t *bmp);
 /*
  * Get the bilinearly filtered color value at x,y where x,y are in
  * normalized image coords [0.f, 1.f] range
  */
-void NANO_BMP_API bilinear_filter(const bmp_t *bmp, float u, float v,
+void bilinear_filter(const bmp_t *bmp, float u, float v,
 	uint8_t *r, uint8_t *g, uint8_t *b);
 
 #ifdef __cplusplus
